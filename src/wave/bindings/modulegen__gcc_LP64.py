@@ -1727,7 +1727,7 @@ def register_Ns3ApplicationContainer_methods(root_module, cls):
     cls.add_method('StartWithJitter', 
                    'void', 
                    [param('ns3::Time', 'start'), param('ns3::Ptr< ns3::RandomVariableStream >', 'rv')])
-    ## application-container.h (module 'network'): void ns3::ApplicationContainer::Stop(ns3::Time stop) [member function]
+    ## application-container.h (module 'network'): void ns3::ApplicationContainer::Stop(ns3::Time Stop) [member function]
     cls.add_method('Stop', 
                    'void', 
                    [param('ns3::Time', 'stop')])
@@ -12211,7 +12211,7 @@ def register_Ns3Application_methods(root_module, cls):
     cls.add_method('SetStartTime', 
                    'void', 
                    [param('ns3::Time', 'start')])
-    ## application.h (module 'network'): void ns3::Application::SetStopTime(ns3::Time stop) [member function]
+    ## application.h (module 'network'): void ns3::Application::SetStopTime(ns3::Time Stop) [member function]
     cls.add_method('SetStopTime', 
                    'void', 
                    [param('ns3::Time', 'stop')])
@@ -20274,4 +20274,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

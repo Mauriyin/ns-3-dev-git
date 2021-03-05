@@ -22,8 +22,11 @@
 #include "a3-rsrp-handover-algorithm.h"
 #include <ns3/log.h>
 #include <ns3/double.h>
+#include <ns3/string.h>
 #include <ns3/lte-common.h>
+#include <../json.hpp>
 #include <list>
+#include <fstream>
 
 namespace ns3 {
 
@@ -66,6 +69,20 @@ A3RsrpHandoverAlgorithm::GetTypeId ()
                    TimeValue (MilliSeconds (256)), // 3GPP time-to-trigger median value as per Section 6.3.5 of 3GPP TS 36.331
                    MakeTimeAccessor (&A3RsrpHandoverAlgorithm::m_timeToTrigger),
                    MakeTimeChecker ())
+    .AddAttribute ("a3Offset",
+                   "Value by which the neighboring cell's RSRP "
+                   "must exceed after Hysteresis has been subtracted "
+                   "in order to trigger a handover",
+                   DoubleValue (0), // 3GPP time-to-trigger median value as per Section 6.3.5 of 3GPP TS 36.331
+                   MakeDoubleAccessor (&A3RsrpHandoverAlgorithm::m_a3OffsetDb),
+                   MakeDoubleChecker<double> ())
+    .AddAttribute ("perCellParameterPath",
+                   "Value by which the neighboring cell's RSRP "
+                   "must exceed after Hysteresis has been subtracted "
+                   "in order to trigger a handover",
+                   StringValue ("FakePath"), // path to the per-cell handover parameter config file
+                   MakeStringAccessor (&A3RsrpHandoverAlgorithm::m_perCellPath),
+                   MakeStringChecker ())
   ;
   return tid;
 }
@@ -99,12 +116,63 @@ A3RsrpHandoverAlgorithm::DoInitialize ()
 
   LteRrcSap::ReportConfigEutra reportConfig;
   reportConfig.eventId = LteRrcSap::ReportConfigEutra::EVENT_A3;
-  reportConfig.a3Offset = 0;
+  reportConfig.a3Offset = m_a3OffsetDb;
   reportConfig.hysteresis = hysteresisIeValue;
   reportConfig.timeToTrigger = m_timeToTrigger.GetMilliSeconds ();
   reportConfig.reportOnLeave = false;
   reportConfig.triggerQuantity = LteRrcSap::ReportConfigEutra::RSRP;
   reportConfig.reportInterval = LteRrcSap::ReportConfigEutra::MS1024;
+  
+  if (m_perCellPath != "FakePath")
+  {
+    std::ifstream  protocol_config_file(m_perCellPath);
+    nlohmann::json perCellParameters = nlohmann::json::parse(protocol_config_file);
+    
+    
+    for (int i = 0; i < int(perCellParameters["BS"].size()); ++i)
+    {
+      for (int j = 0; j < int(perCellParameters["BS"][i]["number_of_sectors"]); ++j)
+      {
+        reportConfig.perCellHysteresis.push_back(perCellParameters["BS"][i]["hysteresis_db"][j]);
+        reportConfig.perCellA3Offset.push_back(perCellParameters["BS"][i]["a3_offset_db"][j]);
+        reportConfig.perCellTimeToTrigger.push_back(perCellParameters["BS"][i]["time_to_trigger_ms"][j]);
+      }
+    }
+  }
+  
+  
+  /*
+  reportConfig.perCellA3Offset.push_back(0);
+  reportConfig.perCellA3Offset.push_back(0);
+  reportConfig.perCellA3Offset.push_back(0);
+  reportConfig.perCellA3Offset.push_back(0);
+  reportConfig.perCellA3Offset.push_back(0);
+  reportConfig.perCellA3Offset.push_back(0);
+  reportConfig.perCellA3Offset.push_back(0);
+  reportConfig.perCellA3Offset.push_back(0);
+  reportConfig.perCellA3Offset.push_back(0);
+  
+  reportConfig.perCellHysteresis.push_back(3);
+  reportConfig.perCellHysteresis.push_back(3);
+  reportConfig.perCellHysteresis.push_back(3);
+  reportConfig.perCellHysteresis.push_back(3);
+  reportConfig.perCellHysteresis.push_back(3);
+  reportConfig.perCellHysteresis.push_back(3);
+  reportConfig.perCellHysteresis.push_back(3);
+  reportConfig.perCellHysteresis.push_back(3);
+  reportConfig.perCellHysteresis.push_back(3);
+  
+  reportConfig.perCellTimeToTrigger.push_back(256);
+  reportConfig.perCellTimeToTrigger.push_back(256);
+  reportConfig.perCellTimeToTrigger.push_back(256);
+  reportConfig.perCellTimeToTrigger.push_back(256);
+  reportConfig.perCellTimeToTrigger.push_back(256);
+  reportConfig.perCellTimeToTrigger.push_back(256);
+  reportConfig.perCellTimeToTrigger.push_back(256);
+  reportConfig.perCellTimeToTrigger.push_back(256);
+  reportConfig.perCellTimeToTrigger.push_back(256);
+  */
+  
   m_measId = m_handoverManagementSapUser->AddUeMeasReportConfigForHandover (reportConfig);
 
   LteHandoverAlgorithm::DoInitialize ();

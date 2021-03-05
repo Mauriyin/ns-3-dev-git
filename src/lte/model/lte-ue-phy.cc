@@ -298,7 +298,7 @@ LteUePhy::GetTypeId (void)
     .AddAttribute ("UeMeasurementsFilterPeriod",
                    "Time period for reporting UE measurements, i.e., the"
                    "length of layer-1 filtering.",
-                   TimeValue (MilliSeconds (200)),
+                   TimeValue (MilliSeconds (1)),
                    MakeTimeAccessor (&LteUePhy::m_ueMeasurementsFilterPeriod),
                    MakeTimeChecker ())
     .AddAttribute ("DownlinkCqiPeriodicity",
@@ -969,7 +969,8 @@ LteUePhy::ReportUeMeasurements ()
       ret.m_componentCarrierId = m_componentCarrierId;
 
       // report to UE measurements trace
-      m_reportUeMeasurements (m_rnti, (*it).first, avg_rsrp, avg_rsrq, ((*it).first == m_cellId ? 1 : 0), m_componentCarrierId);
+      //m_reportUeMeasurements (m_rnti, (*it).first, avg_rsrp, avg_rsrq, ((*it).first == m_cellId ? 1 : 0), m_componentCarrierId);
+      m_reportUeMeasurements (m_imsi, (*it).first, avg_rsrp, avg_rsrq, ((*it).first == m_cellId ? 1 : 0), m_componentCarrierId);
     }
 
   // report to RRC

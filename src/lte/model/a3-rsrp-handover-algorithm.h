@@ -114,7 +114,14 @@ private:
    * must continuously higher than serving cell's RSRP "
    */
   Time m_timeToTrigger;
-
+  /**
+   * The a3Offset attribute. Value by which the neighboring cell's RSRP
+   * must exceed after Hysteresis has been subtracted.
+   */
+  double m_a3OffsetDb;
+  
+  std::string m_perCellPath;
+  
   /// Interface to the eNodeB RRC instance.
   LteHandoverManagementSapUser* m_handoverManagementSapUser;
   /// Receive API calls from the eNodeB RRC instance.

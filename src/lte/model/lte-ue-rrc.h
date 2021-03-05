@@ -1261,7 +1261,13 @@ private:
    *  consecutive in-sync indications from lower layers.
    */
   uint8_t m_n311;
-
+  
+  /** 
+  *   Flag for if the experiment uses the MRO experimental settings
+  */
+  //bool m_mroExp;
+  
+  
   /**
    * Time limit (given by m_t310) before the radio link is considered to have failed.
    * It is set upon detecting physical layer problems i.e. upon receiving
