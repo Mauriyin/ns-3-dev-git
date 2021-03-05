@@ -35,6 +35,7 @@ int APB::Func(int a, int b)
 }
 int main()
 {
+    std::cout << 1 <std::endl;
     APB apb(2333);
     std::cout << apb.Func(1, 2) << std::endl;
     apb.SetFinish();
