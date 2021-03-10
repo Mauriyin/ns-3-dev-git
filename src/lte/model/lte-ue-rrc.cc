@@ -164,6 +164,7 @@ LteUeRrc::LteUeRrc ()
   m_drbPdcpSapUser = new LtePdcpSpecificLtePdcpSapUser<LteUeRrc> (this);
   m_asSapProvider = new MemberLteAsSapProvider<LteUeRrc> (this);
   m_ccmRrcSapUser = new MemberLteUeCcmRrcSapUser<LteUeRrc> (this);
+  m_mroEnv = Create<MROENV> (1357);
 }
 
 LteUeRrc::~LteUeRrc ()
@@ -248,12 +249,11 @@ LteUeRrc::GetTypeId (void)
                    UintegerValue (2), //see 3GPP 36.331 UE-TimersAndConstants & RLF-TimersAndConstants
                    MakeUintegerAccessor (&LteUeRrc::m_n311),
                    MakeUintegerChecker<uint8_t> (1, 10))
-    //.AddAttribute ("mroExp",
-    //               "This specifies the maximum number of in-sync indications. "
-    //               "Standard values: 1, 2, 3, 4, 5, 6, 8, 10",
-    //               BooleanValue (false), 
-    //               MakeBooleanAccessor (&LteUeRrc::m_mroExp),
-    //               MakeBooleanChecker ())
+    .AddAttribute ("mroExp",
+                   "This specifies if the experiment is an MRO experiment. ",
+                   BooleanValue (false), 
+                   MakeBooleanAccessor (&LteUeRrc::m_mroExp),
+                   MakeBooleanChecker ())
     .AddTraceSource ("MibReceived",
                      "trace fired upon reception of Master Information Block",
                      MakeTraceSourceAccessor (&LteUeRrc::m_mibReceivedTrace),
@@ -1875,7 +1875,10 @@ LteUeRrc::MeasurementReportTriggering (uint8_t measId)
 {
   NS_LOG_FUNCTION (this << (uint16_t) measId);
   
-  Ptr<MobilityModel> m = GetObject<MobilityModel> ();
+  Ptr<MobilityModel> ueMobility = GetObject<MobilityModel> ();
+  Vector uePos = ueMobility->GetPosition();
+  std::cout << uePos.x << std::endl;
+  //Vector ueVel = ueMobility->GetVelocity();
   
   std::map<uint8_t, LteRrcSap::MeasIdToAddMod>::iterator measIdIt =
     m_varMeasConfig.measIdList.find (measId);
@@ -2149,6 +2152,13 @@ LteUeRrc::MeasurementReportTriggering (uint8_t measId)
             
             //std::cout << storedMeasIt->first << std::endl;
             
+            //if (m_mroExp)
+            //{
+            //  m_tttAdjustment = m_mroEnv->tableRead(double(uePos.x),double(uePos.y));
+            //  std::cout << double(uePos.x) << double(uePos.y) << m_tttAdjustment << std::endl;
+            //}
+
+
             off = reportConfigEutra.perCellA3Offset.at(storedMeasIt->first - 1);
             hys = reportConfigEutra.perCellHysteresis.at(storedMeasIt->first - 1);
             

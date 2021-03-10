@@ -37,8 +37,9 @@
 #include <ns3/traced-callback.h>
 #include "ns3/component-carrier-ue.h"
 #include <ns3/lte-ue-ccm-rrc-sap.h>
+#include <ns3/ptr.h>
 #include <vector>
-
+#include "MRO-env.h"
 #include <map>
 #include <set>
 
@@ -138,6 +139,8 @@ public:
 private:
   virtual void DoInitialize (void);
   virtual void DoDispose (void);
+  Ptr<MROENV> m_mroEnv;
+  double m_tttAdjustment;
 public:
   /**
    * \brief Get the type ID.
@@ -1265,7 +1268,7 @@ private:
   /** 
   *   Flag for if the experiment uses the MRO experimental settings
   */
-  //bool m_mroExp;
+  bool m_mroExp;
   
   
   /**

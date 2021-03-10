@@ -19,15 +19,15 @@ class mlOutput(Structure):
         ('tttAdjutment', c_double)
     ]
 
-
-exp = Experiment(1234, 4096, 'MRO', '../../')
-
+exp = Experiment(1234, 4096, 'MRO', '../..')
 for i in range(1):
 	exp.reset()
-	r1 = Ns3AIRL(2333, mlInput, mlOutput)
-	pro = exp.run(show_output=false)
+	r1 = Ns3AIRL(1357, mlInput, mlOutput)
+	pro = exp.run(show_output=True)
 	while not r1.isFinish():
+		print('b')
 		with r1 as data:
+			print('@')
 			if data == None:
 				break
 			data.mlOutput.tttAdjutment = data.mlInput.x + data.mlInput.y
