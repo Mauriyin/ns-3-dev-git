@@ -69,6 +69,7 @@ static const Time UE_MEASUREMENT_REPORT_DELAY = MicroSeconds (1);
 
 
 class LteRlc;
+class LteUeNetDevice;
 class LteMacSapProvider;
 class LteUeCmacSapUser;
 class LteUeCmacSapProvider;
@@ -405,6 +406,8 @@ public:
   typedef void (* ImsiCidRntiCountTracedCallback)
   (uint64_t imsi, uint16_t cellId, uint16_t rnti, uint8_t count);
 
+  void SetLteUeNetDevice (Ptr<LteUeNetDevice> device);
+  Ptr<LteUeNetDevice>  GetLteUeNetDevice (void) const;
 
 private:
 
@@ -1344,6 +1347,8 @@ private:
    *
    */
   void ResetRlfParams ();
+
+  Ptr<LteUeNetDevice> m_lteUeNetDevice;
 
 public:
   /** 

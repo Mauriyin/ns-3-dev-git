@@ -25,7 +25,7 @@
  */
 
 #include "lte-ue-rrc.h"
-
+#include "lte-ue-net-device.h"
 #include <ns3/fatal-error.h>
 #include <ns3/log.h>
 #include <ns3/object-map.h>
@@ -38,7 +38,7 @@
 #include <ns3/lte-rlc-am.h>
 #include <ns3/lte-pdcp.h>
 #include <ns3/lte-radio-bearer-info.h>
-
+#include <ns3/node.h>
 #include <cmath>
 
 namespace ns3 {
@@ -192,6 +192,7 @@ LteUeRrc::DoDispose ()
   m_cmacSapProvider.erase(m_cmacSapProvider.begin(), m_cmacSapProvider.end());
   m_cmacSapProvider.clear();
   m_drbMap.clear ();
+  m_lteUeNetDevice = nullptr;
 }
 
 TypeId
@@ -1875,10 +1876,7 @@ LteUeRrc::MeasurementReportTriggering (uint8_t measId)
 {
   NS_LOG_FUNCTION (this << (uint16_t) measId);
   
-  Ptr<MobilityModel> ueMobility = GetObject<MobilityModel> ();
-  Vector uePos = ueMobility->GetPosition();
-  std::cout << uePos.x << std::endl;
-  //Vector ueVel = ueMobility->GetVelocity();
+  
   
   std::map<uint8_t, LteRrcSap::MeasIdToAddMod>::iterator measIdIt =
     m_varMeasConfig.measIdList.find (measId);
@@ -2106,6 +2104,11 @@ LteUeRrc::MeasurementReportTriggering (uint8_t measId)
         // Hys, the hysteresis parameter for this event.
         double hys = EutranMeasurementMapping::IeValue2ActualHysteresis (reportConfigEutra.hysteresis);
 
+        Ptr<MobilityModel> ueMobility = GetLteUeNetDevice()->GetNode()->GetObject<MobilityModel> ();
+        Vector uePos = ueMobility->GetPosition();
+        //std::cout << uePos.x << std::endl;
+        //Vector ueVel = ueMobility->GetVelocity();
+
         switch (reportConfigEutra.triggerQuantity)
           {
           case LteRrcSap::ReportConfigEutra::RSRP:
@@ -2152,11 +2155,7 @@ LteUeRrc::MeasurementReportTriggering (uint8_t measId)
             
             //std::cout << storedMeasIt->first << std::endl;
             
-            //if (m_mroExp)
-            //{
-            //  m_tttAdjustment = m_mroEnv->tableRead(double(uePos.x),double(uePos.y));
-            //  std::cout << double(uePos.x) << double(uePos.y) << m_tttAdjustment << std::endl;
-            //}
+            
 
 
             off = reportConfigEutra.perCellA3Offset.at(storedMeasIt->first - 1);
@@ -2169,6 +2168,12 @@ LteUeRrc::MeasurementReportTriggering (uint8_t measId)
               {
                 if (!hasTriggered)
                   {
+                    if (m_mroExp)
+                      {
+                        m_mroEnv->loadIds(double(Simulator::Now ().GetSeconds ()),int(m_imsi),int(cellId));
+                        m_tttAdjustment = m_mroEnv->tableRead(double(uePos.x),double(uePos.y));
+                        //std::cout << double(uePos.x) << double(uePos.y) << m_tttAdjustment << std::endl;
+                      }
                     concernedCellsEntry.push_back (cellId);
                     eventEntryCondApplicable = true;
                   }
@@ -2212,9 +2217,18 @@ LteUeRrc::MeasurementReportTriggering (uint8_t measId)
                   PendingTrigger_t t;
                   t.measId = measId;
                   t.concernedCells = concernedCellsEntry;
-                  t.timer = Simulator::Schedule (MilliSeconds (reportConfigEutra.perCellTimeToTrigger.at(storedMeasIt->first - 1)),
+                  if (m_mroExp)
+                    {
+                      t.timer = Simulator::Schedule (MilliSeconds (reportConfigEutra.perCellTimeToTrigger.at(storedMeasIt->first - 1) + round(100*m_tttAdjustment)),
                                                  &LteUeRrc::VarMeasReportListAdd, this,
                                                  measId, concernedCellsEntry);
+                    } 
+                  else
+                    {
+                      t.timer = Simulator::Schedule (MilliSeconds (reportConfigEutra.perCellTimeToTrigger.at(storedMeasIt->first - 1)),
+                                                 &LteUeRrc::VarMeasReportListAdd, this,
+                                                 measId, concernedCellsEntry);
+                    }
                   concernedCellsEntry.pop_back(); // in event A3 trigger each cell separately
                   eventEntryCondApplicable = false; // in event A3 trigger each cell separately
                   std::map<uint8_t, std::list<PendingTrigger_t> >::iterator
@@ -3456,6 +3470,17 @@ LteUeRrc::ResetRlfParams ()
   m_cphySapProvider.at (0)->ResetRlfParams ();
 }
 
+void
+LteUeRrc::SetLteUeNetDevice (Ptr<LteUeNetDevice> device)
+{
+  m_lteUeNetDevice = device;
+}
+
+Ptr<LteUeNetDevice>
+LteUeRrc::GetLteUeNetDevice (void) const
+{
+  return m_lteUeNetDevice;
+}
 
 
 } // namespace ns3
