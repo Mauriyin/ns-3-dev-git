@@ -37,6 +37,7 @@ parser.add_argument("--rfConfigFileName")
 parser.add_argument("--protocolConfigFileName")
 parser.add_argument("--traceDir")
 parser.add_argument("--rngSeedNum")
+parser.add_argument("--mroExp")
 args = parser.parse_args()
 
 #parsing inputs and assigning default values if none were input. all defaults are the local filepaths on Collin Brady's computer, unlikely they will work you you.
@@ -65,11 +66,16 @@ if type(args.rngSeedNum) is str:
 else:
     rngSeedNum = 1
 
+if type(args.mroExp) is str:
+    mroExp = bool(args.mroExp)
+else:
+    mroExp = True
+
 with open(rfConfigFileName) as f:
     rfConfig = json.load(f)
 
 
-ns3Settings = {'resultDir' : resultsDir, 'rfConfigFileName' : rfConfigFileName, 'protocolConfigFileName' : protocolConfigFileName, 'traceDir' : traceDir, 'rngSeedNum' : rngSeedNum}
+ns3Settings = {'resultDir' : resultsDir, 'rfConfigFileName' : rfConfigFileName, 'protocolConfigFileName' : protocolConfigFileName, 'traceDir' : traceDir, 'rngSeedNum' : rngSeedNum,'mroExp' : mroExp}
 exp = Experiment(1234, 4096, "MRO", "../..")
 model = torch.jit.load("temp_NN.pt")
 for i in range(1):
