@@ -158,7 +158,6 @@ CommandLine::Parse (std::vector<std::string> args)
             {
               continue;
             }
-
           // is this possible?
           NS_ASSERT_MSG (false,
                          "unexpected error parsing command line parameter: '"
@@ -638,6 +637,7 @@ CommandLine::HandleArgument (const std::string &name, const std::string &value) 
     {
       for (auto i : m_options)
         {
+
           if (i->m_name == name)
             {
               if (!i->Parse (value))

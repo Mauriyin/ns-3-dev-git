@@ -734,6 +734,16 @@ LteUeRrc::DoNotifyRandomAccessFailed ()
          *       send an RRC Connection Re-establishment and switch to
          *       CONNECTED_REESTABLISHING state.
          */
+        if (!m_leaveConnectedMode)
+          {
+            m_leaveConnectedMode = true;
+            SwitchToState (CONNECTED_PHY_PROBLEM);
+            m_rrcSapUser->SendIdealUeContextRemoveRequest (m_rnti);
+            //we should have called NotifyConnectionFailed
+            //but that method would immediately ask you UE to
+            //connect rather than doing cell selection again.
+            m_asSapUser->NotifyConnectionReleased ();
+          }
       }
       break;
 
@@ -1202,6 +1212,16 @@ LteUeRrc::DoRecvRrcConnectionRelease (LteRrcSap::RrcConnectionRelease msg)
 {
   NS_LOG_FUNCTION (this << " RNTI " << m_rnti);
   /// \todo Currently not implemented, see Section 5.3.8 of 3GPP TS 36.331.
+
+  m_lastRrcTransactionIdentifier = msg.rrcTransactionIdentifier;
+  //release resources at UE
+  if (!m_leaveConnectedMode)
+    {
+      m_leaveConnectedMode = true;
+      SwitchToState (CONNECTED_PHY_PROBLEM);
+      m_rrcSapUser->SendIdealUeContextRemoveRequest (m_rnti);
+      m_asSapUser->NotifyConnectionReleased ();
+    }
 }
 
 void 
@@ -2125,7 +2145,7 @@ LteUeRrc::MeasurementReportTriggering (uint8_t measId)
             NS_FATAL_ERROR ("unsupported triggerQuantity");
             break;
           }
-
+          
         for (std::map<uint16_t, MeasValues>::iterator storedMeasIt = m_storedMeasValues.begin ();
              storedMeasIt != m_storedMeasValues.end ();
              ++storedMeasIt)
@@ -2153,14 +2173,17 @@ LteUeRrc::MeasurementReportTriggering (uint8_t measId)
               && (measReportIt->second.cellsTriggeredList.find (cellId)
                   != measReportIt->second.cellsTriggeredList.end ());
             
-            //std::cout << storedMeasIt->first << std::endl;
             
             
-
+            if (m_mroExp)
+            {
+              m_mroEnv->loadIds(double(Simulator::Now ().GetSeconds ()),int(m_imsi),int(cellId), double(mp));
+            }
+            
 
             off = reportConfigEutra.perCellA3Offset.at(storedMeasIt->first - 1);
             hys = reportConfigEutra.perCellHysteresis.at(storedMeasIt->first - 1);
-            
+            //std::cout<<off<<','<<hys<<std::endl;
             // Inequality A3-1 (Entering condition): Mn + Ofn + Ocn - Hys > Mp + Ofp + Ocp + Off
             bool entryCond = mn + ofn + ocn - hys > mp + ofp + ocp + off;
 
@@ -2170,9 +2193,9 @@ LteUeRrc::MeasurementReportTriggering (uint8_t measId)
                   {
                     if (m_mroExp)
                       {
-                        m_mroEnv->loadIds(double(Simulator::Now ().GetSeconds ()),int(m_imsi),int(cellId));
+                        //m_mroEnv->loadIds(double(Simulator::Now ().GetSeconds ()),int(m_imsi),int(cellId));
                         m_tttAdjustment = m_mroEnv->tableRead(double(uePos.x),double(uePos.y));
-                        //std::cout << double(uePos.x) << double(uePos.y) << m_tttAdjustment << std::endl;
+                        //std::cout << m_tttAdjustment << std::endl;
                       }
                     concernedCellsEntry.push_back (cellId);
                     eventEntryCondApplicable = true;
@@ -2182,7 +2205,7 @@ LteUeRrc::MeasurementReportTriggering (uint8_t measId)
               {
                 CancelEnteringTrigger (measId, cellId);
               }
-
+              
             // Inequality A3-2 (Leaving condition): Mn + Ofn + Ocn + Hys < Mp + Ofp + Ocp + Off
             bool leavingCond = mn + ofn + ocn + hys < mp + ofp + ocp + off;
 
@@ -2214,12 +2237,18 @@ LteUeRrc::MeasurementReportTriggering (uint8_t measId)
                 }
               else
                 {
+
                   PendingTrigger_t t;
                   t.measId = measId;
                   t.concernedCells = concernedCellsEntry;
+                  //std::cout<<double(Simulator::Now ().GetSeconds ())<<","<<int(cellId)<<std::endl;
                   if (m_mroExp)
                     {
-                      t.timer = Simulator::Schedule (MilliSeconds (reportConfigEutra.perCellTimeToTrigger.at(storedMeasIt->first - 1) + round(100*m_tttAdjustment)),
+                      
+                      //t.timer = Simulator::Schedule (MilliSeconds (reportConfigEutra.perCellTimeToTrigger.at(storedMeasIt->first - 1) + round(100*m_tttAdjustment)),
+                      //                           &LteUeRrc::VarMeasReportListAdd, this,
+                      //                           measId, concernedCellsEntry);
+                      t.timer = Simulator::Schedule (MilliSeconds (round(m_tttAdjustment)),
                                                  &LteUeRrc::VarMeasReportListAdd, this,
                                                  measId, concernedCellsEntry);
                     } 
@@ -2237,13 +2266,13 @@ LteUeRrc::MeasurementReportTriggering (uint8_t measId)
                   enteringTriggerIt->second.push_back (t);
                 }
             }
-
+            
           if (eventLeavingCondApplicable)
             {
               // reportOnLeave will only be set when eventId = eventA3
               bool reportOnLeave = (reportConfigEutra.eventId == LteRrcSap::ReportConfigEutra::EVENT_A3)
                 && reportConfigEutra.reportOnLeave;
-
+                
               if (reportConfigEutra.timeToTrigger == 0)
                 {
                   VarMeasReportListErase (measId, concernedCellsLeaving, reportOnLeave);
@@ -2883,7 +2912,7 @@ LteUeRrc::VarMeasReportListAdd (uint8_t measId, ConcernedCells_t enteringCells)
        * Collin:
        * New assumptions at this point:
        *  - the call to this function was delayed by time-to-trigger;
-       *  - the time-to-trigger delay is fixed (not adaptive/dynamic) but not identical across cells;
+       *  - the time-to-trigger delay is not fixed or identical across cells;
        */
       //This finds the value in m_enteringTriggerQueue which is actually triggering handover and erases the trigger, 
       //rather than just removing the first trigger. we use the first value in enteringCell to maintain the old functionality
