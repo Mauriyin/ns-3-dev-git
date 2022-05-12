@@ -23,7 +23,7 @@ import json
 
 class mlInput(Structure):
     _pack_ = 1
-    _fields_ = [("x", c_double), ("y", c_double), ("time", c_double), ("imsi", c_int), ("cellId", c_int)]
+    _fields_ = [("x", c_double), ("y", c_double), ("time", c_double), ("imsi", c_int), ("cellId", c_int), ("packetSize",c_double), ("packetReceiverId",c_int), ("rsrp",c_double), ("packetRxFlag",c_int)]
 
 
 class mlOutput(Structure):
@@ -45,22 +45,22 @@ if type(args.resultsDir) is str:
     resultsDir = args.resultsDir
 else:
     #resultsDir = "/home/collin/workspace/ns-3-dev-git/results/Scenario_0.8.1/trial_0/"
-    resultsDir = "/home/collin/Documents/GitHub/ns-3-dev-git-backup/results/Scenario_0.8.1/trial_0/"
+    resultsDir = "/home/leo/Documents/ns-3-dev-git/trial_0/"
 
 if type(args.rfConfigFileName) is str:
     rfConfigFileName = args.rfConfigFileName
 else:
-    rfConfigFileName = "/home/collin/Dropbox/FBC_Maveric_Academic_Collaboration/NS-3_related_files/Simulation_Scenarios/Scenario_0.8.1/trial_0/rf_config.json"
+    rfConfigFileName = "/home/leo/Documents/ns-3-dev-git/scratch/MRO/trial_0/rf_config.json"
 
 if type(args.protocolConfigFileName) is str:
     protocolConfigFileName = args.protocolConfigFileName
 else:
-    protocolConfigFileName = "/home/collin/Dropbox/FBC_Maveric_Academic_Collaboration/NS-3_related_files/Simulation_Scenarios/Scenario_0.8.1/trial_0/protocol_config.json"
+    protocolConfigFileName = "/home/leo/Documents/ns-3-dev-git/scratch/MRO/trial_0/protocol_config.json"
 
 if type(args.traceDir) is str:
     traceDir = args.traceDir
 else:
-    traceDir = "/home/collin/Dropbox/FBC_Maveric_Academic_Collaboration/NS-3_related_files/Simulation_Scenarios/Scenario_0.8.1/trial_0/"
+    traceDir = "/home/leo/Documents/ns-3-dev-git/scratch/MRO/trial_0/"
 
 if type(args.rngSeedNum) is str:
     rngSeedNum = int(args.rngSeedNum)
